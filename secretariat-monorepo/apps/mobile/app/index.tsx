@@ -56,15 +56,15 @@ export default function InboxScreen() {
     }
 
     return (
-        <View className="flex-1 px-6 pt-12 bg-slate-950">
+        <View className="flex-1 px-6 pt-12 bg-slate-950" style={{ flex: 1, paddingTop: 50, paddingHorizontal: 24, backgroundColor: '#020617' }}>
             <Text className="text-white text-3xl font-bold mb-8 font-mono">Inbox</Text>
 
             {/* Voice Recorder Button - The "Big Red Button" */}
             <View className="flex-1 items-center justify-center">
                 <TouchableOpacity
                     className={`w-40 h-40 rounded-full items-center justify-center shadow-lg border-4 transition-all ${isRecording
-                            ? "bg-red-500 border-red-400 shadow-red-500/50 scale-110"
-                            : "bg-red-700 border-slate-800 shadow-red-900"
+                        ? "bg-red-500 border-red-400 shadow-red-500/50 scale-110"
+                        : "bg-red-700 border-slate-800 shadow-red-900"
                         }`}
                     activeOpacity={0.8}
                     onPressIn={startRecording}
