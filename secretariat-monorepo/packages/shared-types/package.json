@@ -1,0 +1,9 @@
+{
+    "name": "@secretariat/shared-types",
+    "version": "0.0.1",
+    "main": "index.ts",
+    "license": "MIT",
+    "scripts": {
+        "build": "tsc"
+    }
+}

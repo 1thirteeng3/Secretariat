@@ -1,0 +1,25 @@
+@import "tailwindcss";
+
+@theme {
+  --color-asphalt: var(--color-bg);
+  --color-sodium-amber: var(--color-primary);
+}
+
+:root {
+  /* Tropical Concrete Noir Standard */
+  --color-bg: #020617;
+  /* Slate 950 */
+  --color-primary: #f97316;
+  /* Orange 500 */
+  --color-accent: #dc2626;
+  /* Red 600 */
+  --font-main: 'JetBrains Mono', monospace;
+}
+
+/* Base Application Styles using Variables */
+body {
+  background-color: var(--color-bg);
+  color: #e2e8f0;
+  /* Slate 200 */
+  font-family: var(--font-main);
+}

@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+pnpm-lock.yaml
+# Keep pnpm-lock if strictly managing versions, but typically yes. 
+# Attempting to strictly ignore modules first.
+
+# Build Outputs
+dist/
+build/
+target/
+out/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Logs
+npm-debug.log
+yarn-error.log
+pnpm-debug.log
+
+# Environment
+.env
+.env.local
+
+# Expo / React Native
+.expo/
+web-build/
+
+# Tauri
+apps/desktop/src-tauri/target/
+
+# Mobile
+apps/mobile/android/
+# Large binaries
+*.bin
+apps/mobile/ios/
+# (Assuming Expo Prebuild workflow managed mostly via config, but often these are committed if modified. For now ignoring to keep repo clean if pure Expo)
+# Actually, let's just ignore node_modules primarily.
+apps/mobile/.expo/
