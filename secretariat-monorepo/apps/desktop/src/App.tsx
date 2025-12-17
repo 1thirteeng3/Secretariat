@@ -64,9 +64,10 @@ function AppContent() {
       alert(`Note created successfully: ${fileName}`);
     } catch (error) {
       console.error("Failed to create note:", error);
-      alert("Failed to save note to Vault.");
+      alert(`Failed to save note: ${error}`);
     }
   };
+
 
   return (
     <div className="flex h-screen w-full bg-slate-950 text-slate-200 relative">
@@ -89,7 +90,7 @@ function AppContent() {
             <button
               key={item.id}
               onClick={() => setActiveView(item.id as View)}
-              className={`flex items-center space-x-3 w-full p-2 rounded-lg transition-colors ${activeView === item.id ? "bg-orange-500/20 text-orange-400" : "hover:bg-slate-800"
+              className={`flex items-center space-x-3 w-full p-2 border border-transparent hover:border-slate-800 transition-colors ${activeView === item.id ? "bg-orange-500/10 text-orange-500 border-orange-500/50" : "hover:bg-slate-900"
                 }`}
             >
               <item.icon className="w-5 h-5" />
@@ -101,26 +102,45 @@ function AppContent() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto p-8">
-        <header className="mb-8 border-b border-slate-800 pb-4">
+        <header className="mb-8 border-b border-slate-800 pb-4 flex justify-between items-center">
           <h1 className="text-3xl font-light tracking-tight text-white">
             {activeView === "INBOX" && "Incoming Thoughts (Inbox)"}
             {activeView === "NOTES" && "Knowledge Graph"}
             {activeView === "CHAT" && "Consultant Mode"}
             {activeView === "AGENDA" && "Timeline"}
           </h1>
+          {activeView === "INBOX" && (
+            <div />
+          )}
+          {activeView === "NOTES" && (
+            <button
+              onClick={async () => {
+                try {
+                  // @ts-ignore
+                  const res = await invoke("sync_vault");
+                  alert(res);
+                } catch (e) {
+                  alert("Sync Error: " + e);
+                }
+              }}
+              className="bg-green-600 text-white px-3 py-1 rounded text-xs uppercase font-bold hover:bg-green-500"
+            >
+              Sync Now
+            </button>
+          )}
         </header>
 
         {activeView === "INBOX" && (
           <div className="space-y-6 max-w-3xl mx-auto">
             {MOCK_INBOX.map((item) => (
-              <div key={item.id} className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+              <div key={item.id} className="bg-slate-950 border border-slate-800 shadow-sm hover:shadow-md transition-shadow">
                 {/* Header */}
                 <div className="bg-slate-900/50 p-3 border-b border-slate-800 flex items-center justify-between text-xs text-slate-500 uppercase tracking-widest font-mono">
                   <div className="flex items-center space-x-2">
                     {item.type === "AUDIO" ? <Mic className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />}
                     <span>{item.timestamp} • via {item.source}</span>
                   </div>
-                  <span className="bg-slate-800 px-2 py-0.5 rounded text-slate-400">Processing</span>
+                  <span className="bg-slate-800 px-2 py-0.5 text-slate-400 border border-slate-700">Processing</span>
                 </div>
 
                 <div className="p-6 grid gap-6">
@@ -135,12 +155,12 @@ function AppContent() {
                   {/* AI Suggestion */}
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2">
-                      <span className="text-orange-500 font-bold text-xs uppercase px-1.5 py-0.5 border border-orange-500/50 rounded">AI Suggestion</span>
+                      <span className="text-orange-500 font-bold text-xs uppercase px-1.5 py-0.5 border border-orange-500/50">AI Suggestion</span>
                       <h3 className="font-semibold text-white">{item.aiSuggestion.title}</h3>
                     </div>
                     <div className="flex items-center space-x-2">
                       {item.aiSuggestion.tags.map(tag => (
-                        <span key={tag} className="text-xs text-blue-400 bg-blue-400/10 px-2 py-0.5 rounded-full">{tag}</span>
+                        <span key={tag} className="text-xs text-blue-400 bg-blue-400/10 px-2 py-0.5 border border-blue-400/20">{tag}</span>
                       ))}
                     </div>
                     <p className="text-slate-300">{item.aiSuggestion.body}</p>
@@ -149,17 +169,17 @@ function AppContent() {
 
                 {/* Actions */}
                 <div className="bg-slate-950 p-3 flex justify-end space-x-2 border-t border-slate-800">
-                  <button className="flex items-center space-x-1 px-4 py-2 rounded text-slate-400 hover:text-red-400 hover:bg-red-400/10 transition-colors">
+                  <button className="flex items-center space-x-1 px-4 py-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 transition-colors border-r border-slate-800">
                     <X className="w-4 h-4" />
                     <span>Reject</span>
                   </button>
-                  <button className="flex items-center space-x-1 px-4 py-2 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+                  <button className="flex items-center space-x-1 px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
                     <Edit className="w-4 h-4" />
                     <span>Edit</span>
                   </button>
                   <button
                     onClick={() => handleApprove(item)}
-                    className="flex items-center space-x-1 px-6 py-2 rounded bg-orange-600 hover:bg-orange-500 text-white shadow-lg shadow-orange-900/20 transition-all transform active:scale-95">
+                    className="flex items-center space-x-1 px-6 py-2 bg-orange-600 hover:bg-orange-500 text-white shadow-lg shadow-orange-900/20 transition-all transform active:scale-95 border border-orange-400">
                     <Check className="w-4 h-4" />
                     <span>Approve</span>
                   </button>
@@ -170,7 +190,7 @@ function AppContent() {
         )}
 
         {activeView === "NOTES" && (
-          <div className="h-[calc(100vh-120px)] rounded-xl border-2 border-slate-800 overflow-hidden">
+          <div className="h-[calc(100vh-120px)] border-2 border-slate-800 overflow-hidden">
             <GraphView />
           </div>
         )}

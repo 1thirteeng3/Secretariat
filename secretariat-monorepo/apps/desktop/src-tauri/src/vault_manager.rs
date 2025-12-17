@@ -10,6 +10,13 @@ pub struct Note {
     pub title: String,
     pub content: String,
     pub created_at: String,
+    #[serde(default)] // Allow old notes to exist without this
+    pub updated_at: String,
+    #[serde(default)]
+    pub version: u64,
+    #[serde(default)]
+    pub device_id: String,
+    #[serde(default)]
     pub tags: Vec<String>
 }
 
@@ -35,15 +42,33 @@ pub fn create_note(
         return Err("Note already exists".to_string());
     }
 
-    let frontmatter = format!(
-        "---\nid: {}\ntitle: {}\ncreated_at: {}\ntags: {:?}\n---\n\n",
-        uuid::Uuid::new_v4(),
-        title,
-        Utc::now().to_rfc3339(),
-        tags
-    );
+    let now = Utc::now().to_rfc3339();
 
-    let final_content = format!("{}{}", frontmatter, content);
+    // Create Metadata Struct for Frontmatter
+    #[derive(Serialize)]
+    struct NoteMetadata {
+        id: String,
+        title: String,
+        created_at: String,
+        updated_at: String,
+        version: u64,
+        device_id: String,
+        tags: Vec<String>,
+    }
+
+    let metadata = NoteMetadata {
+        id: uuid::Uuid::new_v4().to_string(),
+        title: title.clone(),
+        created_at: now.clone(),
+        updated_at: now,
+        version: 1,
+        // TODO: Get actual device ID from config
+        device_id: "desktop-v1".to_string(), 
+        tags,
+    };
+
+    let yaml_frontmatter = serde_yaml::to_string(&metadata).map_err(|e| e.to_string())?;
+    let final_content = format!("---\n{}---\n\n{}", yaml_frontmatter, content);
 
     fs::write(&full_path, final_content).map_err(|e| e.to_string())?;
 

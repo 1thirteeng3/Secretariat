@@ -1,6 +1,7 @@
 mod vault_manager;
 mod ai_orchestrator;
 mod graph_engine;
+mod sync_engine;
 mod tests;
 
 use std::sync::Mutex;
@@ -34,7 +35,8 @@ pub fn run() {
             vault_manager::get_app_theme,
             ai_orchestrator::process_input_with_ai,
             ai_orchestrator::chat_with_vault,
-            graph_engine::rebuild_graph
+            graph_engine::rebuild_graph,
+            sync_engine::sync_vault
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
