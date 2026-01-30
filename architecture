@@ -1,0 +1,378 @@
+Pandaemon: Product & Architecture
+Specification (Reescrita Integrada)
+Versão: 2.0.0 (Reescrita após atualizações de arquitetura)
+Status: Desenvolvimento ativo
+Este documento reescreve integralmente a especificação do produto Pandaemon, mantendo a
+estrutura e intenção do documento original, mas incorporando as modificações arquiteturais
+solicitadas.
+MÓDULO 1 – DEFINIÇÃO DO PRODUTO E FILOSOFIA (O “Porquê”)
+1.0 Visão Geral
+Este módulo estabelece as leis imutáveis, definições ontológicas e princípios orientadores do
+Pandaemon. Essas axiomatizações servem como mecanismo de arbitragem para todas as decisões de
+design, trade‑offs arquiteturais e implementações de funcionalidades. Se um recurso contradisser estes
+princípios, ele deve ser descartado ou refeito.
+1.1 O Manifesto Pandaemon
+1.1.1 Postulado Anti‑Chatbot – Definição Ontológica
+Rejeição do Chatbot: Pandaemon rejeita o paradigma de “chatbot” em favor do paradigma de
+daemon. Ele é projetado para ser uma entidade residente no ecossistema digital do usuário,
+não um visitante servindo via página web.
+Definição de Daemon Cognitivo: Pandaemon é definido como um daemon de sistema
+operacional cognitivo. Como um daemon no sentido Unix/Linux, ele opera em segundo plano,
+independente da interação direta do usuário, com permissões de sistema para observar
+mudanças de arquivos, executar processos e gerenciar solicitações de rede. O termo cognitivo
+indica a utilização de modelos de linguagem de grande porte (LLMs) como unidade de
+processamento de dados não estruturados (texto, intenção, código), funcionando como uma
+“CPU semântica”. Ele vive no shell e no sistema de arquivos, não no navegador.
+Isomorfismo Funcional: Pandaemon opera de maneira semelhante a um serviço cron ou um
+serviço systemd , porém com agência. Um daemon tradicional pode apenas monitorar e
+acionar um e‑mail quando o disco enche; Pandaemon avalia comandos de alta complexidade,
+como sintetizar notas relacionadas a “Entropia” e “Termodinâmica”.
+Relação com o Usuário: O usuário não “visita” Pandaemon; eles coabitam o espaço digital. A
+relação é contínua, assíncrona e com estado.
+1.1.2 Princípio do Local‑First (Estado da Verdade)
+Conflito de Soberania na Nuvem: Muitos agentes de IA requerem que dados sejam ingeridos e
+indexados em bancos de dados proprietários na nuvem, criando dependência de servidores que
+•
+•
+•
+•
+•
+1
+o usuário não controla. Pandaemon estabelece o Workstation Fedora do usuário como o Plano
+Material Primário: a origem imutável da verdade.
+O Arquivo como Banco de Dados: O armazenamento primário de dados é o sistema de
+arquivos local, especialmente os arquivos Markdown dentro do cofre do Obsidian. Dados são
+mantidos em formatos legíveis e duradouros (.md, .txt, .json). Se o software Pandaemon deixar
+de existir, as informações continuam acessíveis via editores de texto comuns.
+Servidor como Processador Transitório: O servidor remoto (anteriormente Oracle, agora VPS
+agnóstico) é definido estritamente como um nó de computação, não uma autoridade de
+armazenamento. Ele mantém uma cópia de dados apenas para processar (ler/escrever via
+agente) e garantir acessibilidade remota, espelhando o repositório local.
+Sincronização: A sincronização de dados utiliza Syncthing com TLS 1.3. A direção é bidirecional,
+mas a resolução de conflitos sempre favorece a máquina local (Fedora) a menos que um agente
+(ex. Jardineiro) tenha autorização explícita para sobrescrever seções específicas.
+1.1.3 Princípio de Agência e Uso de Ferramentas
+Agente atuador: Pandaemon não é um gerador de texto; é um atuador. A geração de texto é
+um subproduto da interface; a função primária é executar ferramentas.
+Execução determinística: Quando Pandaemon precisa “tocar música”, ele não imagina uma
+canção; ele executa um script Python determinístico (por exemplo, chamado
+spotify_control ).
+Modelo Hub‑and‑Spoke (núcleo e plugins): O núcleo decide o que fazer; os spokes (agentes)
+definem como fazer. O LLM nunca executa código arbitrário fora de ferramentas predefinidas,
+exceto em contextos explícitos de depuração.
+1.1.4 Privacidade e Soberania (Regras de Engajamento)
+Taxonomia de dados: Todo dado manipulado por Pandaemon recebe um nível de segurança:
+Nível 0 (verde) para dados públicos e efêmeros; Nível 1 (âmbar) para produção intelectual
+pessoal, segura para inferência; Nível 2 (vermelho) para dados soberanos (senhas, chaves,
+registros financeiros) que nunca podem deixar o ambiente local.
+Limpeza de API: Antes de enviar qualquer prompt a um provedor externo, o middleware
+sanitiza PII, substituindo e‑mails, telefones e IPs por tokens neutros. Metadados (EXIF,
+timestamps) são removidos ou adulterados para prevenir correlação.
+1.1.5 Agnosticismo de Modelo (Arquitetura de Cérebro Desacoplado)
+Cérebro como plugin: O modelo LLM não é o sistema; é um “processador cognitivo”
+substituível. O núcleo conversa com modelos através de uma interface padronizada
+(Standardized_Prompt_JSON / Standardized_Action_JSON).
+Roteamento dinâmico: O kernel seleciona o modelo conforme a complexidade (Haiku/Llama
+para tarefas simples; Sonnet para raciocínio; Opus para “deep work”). Planos futuros incluem
+implantar modelos localmente conforme hardware permitir.
+1.2 Casos de Uso Detalhados (Narrativa Funcional)
+Esta seção traduz os princípios abstratos em fluxos operacionais concretos. Os cenários originais
+(Secretariat, Gardener, Black   Ops, etc.) permanecem, com adaptações que serão detalhadas nos
+módulos seguintes.
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+2
+MÓDULO 2 – ARQUITETURA DO SISTEMA (O “Onde”)
+2.1 Topologia de Rede e Estratégia de Segurança
+2.1.1 Ambiente de Computação
+Migração de provedor: A instância original Oracle “Always Free” é eliminada. A infraestrutura
+agora é codificada em Terraform/Ansible e pode ser aplicada em provedores como Hetzner,
+Vultr ou DigitalOcean. A máquina recomendada: VPS com 2–4 vCPUs ARM64 ou x86, 4–8 GB de
+RAM, 50–100 GB de armazenamento, custando US$ 4–6/mês.
+Sistema Operacional: Ubuntu 24.04 LTS minimal ou Fedora Server.
+Criptografia: Volumes criptografados pelo provedor são habilitados. As chaves de SSH
+(Ed25519) são geradas e mantidas no Workstation local.
+2.1.2 Design da Rede Virtual
+Zero Trust: Nenhuma porta pública é exposta. Toda comunicação se dá pela interface Tailscale
+(WireGuard mesh).
+Sub‑rede: Uma sub‑rede privada /24 é criada para os serviços, com IPs fixos atribuídos via
+Tailscale.
+Ingressos: O único tráfego permitido do exterior é via Tailscale; as portas 22 (SSH), 22000/21027
+(Syncthing), e 8443 (Webhook) estão acessíveis apenas para dispositivos autenticados na malha
+VPN.
+Egressos: As saídas são permitidas por padrão para permitir chamadas a APIs (Anthropic,
+Spotify, Git), com exceção dos contêineres “Black Ops” que saem através de proxies e tor.
+2.1.3 Firewall e Políticas de Segurança
+Política padrão: BLOQUEIO TOTAL. Listas de segurança (firewall) explicitamente autorizam
+apenas serviços essenciais.
+SSH: Porta 22 liberada apenas para IPs Tailscale; autenticação por chave; PermitRootLogin
+no ; PasswordAuthentication no . Fail2Ban está ativado para banir IPs após 3 tentativas.
+Syncthing: As portas 22000 (TCP/UDP) e 21027 (Discovery) permitem comunicação P2P entre
+nós autenticados. A GUI do Syncthing não é exposta; acessa‑se via túnel SSH (localhost).
+Webhook: A porta 8443 é opcional; se usada, trafega por Tailscale ou reverse proxy com TLS
+(Caddy/Nginx).
+2.1.4 Endurecimento do Host
+Sistema Minimalista: Remove‑se pacotes desnecessários.
+Port Knocking (Opcional): Uma camada extra pode esconder a porta SSH até que um pacote
+específico seja enviado.
+Atualizações Automáticas: unattended-upgrades (Ubuntu) ou dnf-automatic (Fedora)
+mantêm patches de segurança.
+2.1.5 Túnel e Estratégias de Proxy
+WireGuard via Tailscale: Todas as conexões entre os nós (servidor, laptop, smartphone)
+acontecem por tunelamento cifrado.
+Tor Proxy (para Black Ops): Os contêineres que necessitam anonimato utilizam tor-proxy
+interno.
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+3
+Proxies residenciais: Para extração em sites que bloqueiam IPs de datacenter, integra‑se uma
+rede de proxies residenciais. Custos (~US$ 3/GB) são aceitos como parte das operações
+especiais.
+2.2 Containerização, Orquestração e Execução
+Monólito Modular em Python: Todo o sistema roda como uma aplicação FastAPI única em
+Python 3.12. Dentro dela, cada agente é um módulo carregado dinamicamente.
+Isolamento de Código: Para executar código gerado pelo LLM, utiliza‑se micro‑VMs via gVisor
+ou Firecracker, garantindo que scripts perigosos não afetem o host.
+Barramento de Eventos Interno: Em vez de chamar endpoints HTTP entre módulos, um event
+bus assíncrono (ZeroMQ ou gRPC) é usado para encaminhar comandos e respostas, reduzindo
+overhead e latência.
+2.3 Armazenamento e Fluxo de Dados
+Vault Obsidian: Montado como volume persistente (/data/obsidian).
+Vetores: O banco de dados vetorial é implementado com ChromaDB ou LanceDB, rodando
+in‑processo dentro do Python. A indexação é persistida em /data/vectors/index .
+Backup e Replicação: Syncthing replica o vault e as bases vetoriais entre o servidor e o
+workstation. O fluxo de controle (mensagens, comandos) não depende da sincronização; é
+enviado via webhook em tempo real.
+MÓDULO 3 – ESPECIFICAÇÕES DOS AGENTES (O “Como”)
+3.1 Núcleo (Clawdbot 2.0)
+Função: Sistema nervoso central / roteador semântico.
+Implementação: Python 3.12 + FastAPI.
+Responsabilidade: Não executa computações pesadas nem manipula diretamente o sistema de
+arquivos. Converte entrada natural em comandos estruturados e despacha aos módulos
+apropriados.
+Processamento de Entrada: O webhook recebe mensagens (texto/voz). Se for voz, a camada de
+transdução usa ffmpeg para converter OGG/Opus em WAV e chama whisper local ou API
+Groq. O texto resultante é então processado pelo LLM para identificar a intenção.
+Roteador Cognitivo: A lógica de intenção determina se a solicitação é um Ato (tocar música),
+Criação (escrever nota), Consulta (recuperar nota), Implantação (postar em rede social) ou
+outra. A partir disso, o núcleo constrói um objeto JSON e chama a função correta. Exemplos:
+“Play ‘Focus Noir’” → chama remote_dj.play() .
+“Crie uma nota sobre Entropia” → chama secretariat.create() .
+“O que escrevi sobre Entropia?” → chama gardener.query() .
+Definição de Ferramentas: Cada módulo fornece um schema Pydantic para seus parâmetros
+(por exemplo, content: str , folder: str , tags: List[str] ). O núcleo valida e
+despacha.
+3.2 Spoke 1 – Secretariat (Gerenciador do Obsidian)
+Papel: Escriba soberano e persistidor de conhecimento.
+Entrada: Recebe JSON com content_body , title_hint , target_folder_hint , tags e
+aliases .
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+4
+Processo: Cria header YAML com ID único (timestamp), normaliza tags (minúsculas, sem # ),
+injeta status ( seed ou input ), sanitiza o título (transliteração ASCII, remoção de caracteres
+ilegais) e decide a pasta final (verifica se existe; senão, cai no Inbox).
+Concorrrência: Verifica a existência de .lock antes de editar. Utiliza escrita atômica (escreve
+para arquivo temporário, depois renomeia).
+Retorno: Envia objeto contendo status , internal_path , obsidian_uri e estatísticas
+(palavras, tags). O núcleo repassa um link clicável via Telegram.
+3.3 Spoke 2 – Gardener (Daemon de Ontologia)
+Papel: Responsável por “manutenção tectológica”.
+Gatilho: Execução programada (por exemplo, 04:00 local via systemd timer).
+Pipeline:
+Varredura Diferencial: Carrega gardener_state.json com o timestamp do último run e
+processa apenas notas modificadas após esse horário. Ignora arquivos em .trash ou tag
+#archive . Verifica .syncthing.*.tmp e .lock para evitar conflitos.
+Vectorização: Usa sentence-transformers/all-MiniLM-L6-v2 para embutir o título, tags
+e primeiro trecho de 500 caracteres. Atualiza o índice de vetores em ChromaDB/LanceDB.
+Consulta Semântica: Para cada nova nota N , consulta os k=3 vizinhos mais próximos.
+Descartar candidatos com similaridade < 0,75 para evitar conexões fracas.
+Síntese Dialética: Para cada par N – M com S>0,75 , chama o LLM (Claude 3.5 Sonnet) com o
+conteúdo de N e M e pede uma frase de insight. Limita a 50 chamadas por execução.
+Enxerto Lógico: Verifica se a nota já contém o delimitador --- %% PANDAEMON_GARDEN %%
+--- . Em modo append‑only, insere um bloco com:
+Nome da nota conectada e similaridade;
+Insight;
+Link recíproco opcional.
+Impacto Computacional: O processo usa ~100 MB para o modelo, 4 MB por 1000 vetores e
+consome < 2% de 8 GB de RAM. Executa com baixa prioridade para não afetar solicitações de
+usuários.
+Tratamento de Erros: Salta arquivos corrompidos, persiste o estado se API estiver fora do ar,
+evita auto‑referência (N≠N).
+3.4 Spoke 3 – Remote DJ (Controlador de Música)
+Papel: Telemetria e controle remoto de áudio. A instância de servidor não tem placa de som;
+controla dispositivos (Fedora, Android) via Spotify Connect.
+Autenticação: Um script local é executado uma vez para obter refresh_token via OAuth e
+adicionar ao .env do servidor. O módulo gerencia automaticamente a renovação do token.
+Fluxo de Interação:
+Resolução de conteúdo: Identifica se a consulta é URI direta; se não, usa sp.search para
+obter playlist/álbum/faixa relevante.
+Resolução de dispositivo: Usa sp.devices() para obter sessões Spotify ativas; seleciona
+dispositivo específico (móvel/workstation) ou o ativo.
+Execução: Faz transfer_playback para forçar foco e depois start_playback (context_uri
+ou uris). Ajusta volume para 50% preventivamente.
+UX e Erros: Utiliza mensagens otimistas (“Procurando…” → “Encontrado…” → “Reproduzindo…”).
+Retorna mensagens de erro claras se não houver dispositivos ativos ou se a conta não for
+Premium.
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+◦
+◦
+◦
+•
+•
+•
+•
+•
+•
+•
+•
+•
+5
+3.5 Spoke 4 – Black Ops 2.0 (Operações Especiais)
+Papel: Agente de extração de dados e automação web em ambientes hostis (redes sociais,
+fóruns).
+Navegação Real: Em vez de usar HTTP puro, utiliza a biblioteca browser‑use (Playwright) para
+controlar um navegador headless com impressão digital humana. Isso permite clicar, rolar e
+interagir de forma parecida com usuários, vencendo sistemas anti‑bot.
+Proxies Rotativos: Integra proxies residenciais (IPRoyal, Bright Data) para mascarar IP de
+datacenter.
+Anonimato: Contêiner isola todo o tráfego via tor‑proxy e proxies residenciais.
+Sandbox: Código Python gerado para extração roda em micro‑VMs efêmeras (gVisor/
+Firecracker). Após a execução, a VM é destruída, garantindo que exploits não persistam.
+Tempo Aleatório: Para reduzir correlação temporal, o agente introduz jitter (2–17 min) entre o
+comando e a ação, quando apropriado.
+3.6 Spoke 5 – Outros Agentes (Resumo)
+Além dos módulos principais acima, o sistema inclui agentes adicionais conforme a necessidade:
+Automação de Tarefas (Tasker): Interface com Google Tasks/Calendar para criar, listar e
+lembrar tarefas.
+Assistente de Programação: Suporte a geração de código, unit tests e commit por IA,
+executando em sandbox isolada.
+Gateway de Mensagens: Integração com canais adicionais (ex. Matrix, Slack).
+Todos esses agentes respeitam o barramento de eventos interno e a taxonomia de dados.
+MÓDULO 4 – ENGENHARIA ECONÔMICA (O “Quanto”)
+O objetivo é manter o custo operacional abaixo de US$ 6/mês. As principais despesas são:
+VPS: US$ 4–6/mês (Hetzner/Vultr).
+Proxies residenciais: Variável, ~US$ 3/GB; uso moderado dura meses.
+APIs: Custos de chamadas a LLMs (Anthropic/OpenAI) e Spotify são contabilizados, mas o
+sistema é model‑agnóstico e pode alternar para alternativas gratuitas/locais.
+Tailscale (Opcional): Gratuito para uso pessoal; licenças comerciais disponíveis.
+MÓDULO 5 – OBSERVABILIDADE, CONFIABILIDADE E CI/CD
+(O “Quando”)
+5.1 Monitoramento e Alertas
+Logs estruturados: Todos os módulos registram eventos em formato JSON. Logs são gravados
+em um SQLite ou arquivo, com interface web simples para consulta.
+Alertas: Watchdogs monitoram processos. Se um processo falhar ou se a CPU ficar saturada,
+uma notificação é enviada para um canal dedicado (Telegram “Pandaemon Ops”).
+Sinal de vida: Cada agente envia “batimentos cardíacos” periódicos para o núcleo; a ausência
+desencadeia alertas.
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+6
+5.2 Testes e Integração Contínua
+Pipeline GitHub Actions: Qualquer mudança no repositório passa por ruff (lint), mypy
+(tipagem), e pytest (unit tests). Commits que falham são bloqueados.
+IaC: As alterações de infraestrutura são testadas com terraform plan em pull requests para
+detectar drift.
+5.3 Gestão de Falhas
+Scripts de recuperação: Crashes detectados acionam scripts que reiniciam serviços essenciais.
+Condições de corrida: O uso de .lock elimina corrupção de arquivos e conflitos de
+sincronização.
+Backups: Snapshots regulares do vault e da base vetorial são armazenados off‑site (ex.
+armazenamento criptografado na cloud ou backup local externo).
+MÓDULO 6 – ROADMAP FUTURO E CONSIDERAÇÕES ÉTICAS
+6.1 Evolução Tecnológica
+Inferência Local: À medida que hardware melhora, modelos mais avançados poderão rodar
+localmente, reduzindo ainda mais dependências externas.
+Extensões de Plugins: Novas ferramentas (por exemplo, controle de dispositivos IoT, integração
+com bancos de dados pessoais) podem ser adicionadas facilmente por meio do barramento de
+plugins.
+Interface Multimodal: Implementação de agentes de vídeo/imagem para extrair informações
+visuais (OCR, diagramas) com processamento local.
+6.2 Ética e Responsabilidade
+Transparência: O usuário deve entender como e onde seus dados são usados. As políticas de
+privacidade devem ser explícitas.
+Consentimento: Qualquer publicação pública (por exemplo, Black Ops) deve ser confirmada
+pelo usuário.
+Limites de Ação: Pandaemon nunca executará ações que possam causar danos físicos ou
+financeiros sem confirmação clara.
+Conclusão
+Esta reescrita apresenta uma especificação completa do Pandaemon que preserva a filosofia original ao
+mesmo tempo que implementa alterações críticas na arquitetura: unificação em Python, comunicação
+de baixa latência, infraestrutura soberana via Tailscale, separação entre fluxo de controle e dados, e
+profissionalização de operações especiais.
+Cada módulo foi descrito em detalhe para que o documento sirva como guia de implementação,
+referência de design e contrato de comportamento para evoluções futuras.
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+•
+7
